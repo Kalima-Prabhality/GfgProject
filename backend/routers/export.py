@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 import json
 import csv
@@ -13,9 +12,7 @@ from models.database import User, ChatHistory, get_db, settings
 router = APIRouter()
 
 
-# ── shared auth helper that accepts token from query param ──────────────────
-async def get_user_from_token(token: str, db: AsyncSession) -> User:
-    """Decode JWT and return User — used for download endpoints."""
+def get_user_from_token(token: str, db: Session) -> User:
     credentials_exception = HTTPException(status_code=401, detail="Invalid token")
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
@@ -25,29 +22,23 @@ async def get_user_from_token(token: str, db: AsyncSession) -> User:
     except JWTError:
         raise credentials_exception
 
-    result = await db.execute(select(User).where(User.id == int(user_id)))
-    user = result.scalar_one_or_none()
+    user = db.query(User).filter(User.id == int(user_id)).first()
     if not user or not user.is_active:
         raise credentials_exception
     return user
 
 
-# ── CSV ──────────────────────────────────────────────────────────────────────
 @router.get("/csv/{history_id}")
-async def export_csv(
+def export_csv(
     history_id: int,
-    token: str = Query(..., description="JWT access token"),
-    db: AsyncSession = Depends(get_db),
+    token: str = Query(...),
+    db: Session = Depends(get_db),
 ):
-    current_user = await get_user_from_token(token, db)
-
-    result = await db.execute(
-        select(ChatHistory).where(
-            ChatHistory.id == history_id,
-            ChatHistory.user_id == current_user.id,
-        )
-    )
-    item = result.scalar_one_or_none()
+    current_user = get_user_from_token(token, db)
+    item = db.query(ChatHistory).filter(
+        ChatHistory.id == history_id,
+        ChatHistory.user_id == current_user.id,
+    ).first()
     if not item or not item.result_json:
         raise HTTPException(status_code=404, detail="History item not found")
 
@@ -69,27 +60,22 @@ async def export_csv(
     )
 
 
-# ── PDF ──────────────────────────────────────────────────────────────────────
 @router.get("/pdf/{history_id}")
-async def export_pdf(
+def export_pdf(
     history_id: int,
-    token: str = Query(..., description="JWT access token"),
-    db: AsyncSession = Depends(get_db),
+    token: str = Query(...),
+    db: Session = Depends(get_db),
 ):
     from reportlab.lib.pagesizes import landscape, letter
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
     from reportlab.lib.styles import getSampleStyleSheet
     from reportlab.lib import colors
 
-    current_user = await get_user_from_token(token, db)
-
-    result = await db.execute(
-        select(ChatHistory).where(
-            ChatHistory.id == history_id,
-            ChatHistory.user_id == current_user.id,
-        )
-    )
-    item = result.scalar_one_or_none()
+    current_user = get_user_from_token(token, db)
+    item = db.query(ChatHistory).filter(
+        ChatHistory.id == history_id,
+        ChatHistory.user_id == current_user.id,
+    ).first()
     if not item or not item.result_json:
         raise HTTPException(status_code=404, detail="History item not found")
 
@@ -116,8 +102,7 @@ async def export_pdf(
 
     if item.insights:
         elems.append(Paragraph("AI Insights:", styles["Heading3"]))
-        clean_insights = item.insights.replace("**", "")
-        elems.append(Paragraph(clean_insights, styles["Normal"]))
+        elems.append(Paragraph(item.insights.replace("**", ""), styles["Normal"]))
         elems.append(Spacer(1, 16))
 
     cols  = list(data[0].keys())

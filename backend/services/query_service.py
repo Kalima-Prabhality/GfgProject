@@ -19,7 +19,7 @@ def is_safe_query(sql: str) -> tuple[bool, str]:
         return False, "System tables blocked."
     tables = re.findall(r'\bFROM\s+([a-zA-Z_]+)', up) + re.findall(r'\bJOIN\s+([a-zA-Z_]+)', up)
     for t in tables:
-        if t.lower() not in ("campaigns",):
+        if t.lower() not in ("campaigns",) and not t.lower().startswith("csv_"):
             return False, f"Table '{t}' not allowed."
     return True, ""
 

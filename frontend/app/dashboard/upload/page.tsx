@@ -1,8 +1,11 @@
 "use client";
+
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Upload, FileText, Trash2, CheckCircle2, AlertCircle,
   Loader2, Database, RefreshCw, HardDrive, FolderOpen,
+  MessageSquare,
 } from "lucide-react";
 import { api } from "@/lib/api";
 
@@ -16,6 +19,7 @@ interface CSVFile {
 }
 
 export default function UploadPage() {
+  const router = useRouter(); // ✅ inside component
   const [files, setFiles]         = useState<CSVFile[]>([]);
   const [loading, setLoading]     = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -42,16 +46,12 @@ export default function UploadPage() {
       setMsg({ type: "error", text: "File exceeds 1 GB limit." });
       return;
     }
-
     setUploading(true);
     setProgress(0);
     setMsg(null);
-
-    // Fake progress ticker
     const ticker = setInterval(() => {
       setProgress(p => (p < 80 ? p + Math.random() * 6 : p));
     }, 400);
-
     try {
       const fd = new FormData();
       fd.append("file", file);
@@ -95,7 +95,7 @@ export default function UploadPage() {
   return (
     <div className="h-screen flex flex-col" style={{ background: "var(--bg-base)" }}>
 
-      {/* ── Header ─────────────────────────────────── */}
+      {/* Header */}
       <div className="h-16 flex items-center justify-between px-6 flex-shrink-0 glass"
         style={{ borderBottom: "1px solid var(--border-subtle)" }}>
         <div className="flex items-center gap-3">
@@ -118,7 +118,7 @@ export default function UploadPage() {
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-3xl mx-auto space-y-6">
 
-          {/* ── Default dataset ─────────────────────── */}
+          {/* Default dataset */}
           <div className="card-pro flex items-start gap-4" style={{ borderLeft: "4px solid var(--brand)" }}>
             <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
               style={{ background: "var(--brand-dim)", border: "1px solid var(--brand-border)" }}>
@@ -140,12 +140,11 @@ export default function UploadPage() {
             <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-1" style={{ color: "var(--emerald)" }} />
           </div>
 
-          {/* ── Upload zone ─────────────────────────── */}
+          {/* Upload zone */}
           <div>
             <h3 style={{ fontFamily: "Manrope, sans-serif", fontSize: "1.125rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "0.875rem" }}>
               Upload Your Own CSV
             </h3>
-
             <label
               className="upload-zone block"
               onDragOver={e => { e.preventDefault(); setDragOver(true); }}
@@ -158,7 +157,6 @@ export default function UploadPage() {
               }}>
               <input type="file" accept=".csv" className="hidden" disabled={uploading}
                 onChange={e => { const f = e.target.files?.[0]; if (f) doUpload(f); e.target.value = ""; }} />
-
               {uploading ? (
                 <div className="flex flex-col items-center gap-4 py-4">
                   <Loader2 className="w-12 h-12 animate-spin" style={{ color: "var(--brand)" }} />
@@ -194,10 +192,10 @@ export default function UploadPage() {
             {msg && (
               <div className="mt-3 flex items-center gap-3 px-4 py-3 rounded-xl fade-in"
                 style={{
-                  background:  msg.type === "success" ? "var(--emerald-dim)" : "var(--red-dim)",
-                  border:      `1.5px solid ${msg.type === "success" ? "rgba(5,150,105,0.25)" : "rgba(220,38,38,0.25)"}`,
-                  color:       msg.type === "success" ? "var(--emerald)" : "var(--red)",
-                  fontSize:    "0.9375rem",
+                  background: msg.type === "success" ? "var(--emerald-dim)" : "var(--red-dim)",
+                  border: `1.5px solid ${msg.type === "success" ? "rgba(5,150,105,0.25)" : "rgba(220,38,38,0.25)"}`,
+                  color: msg.type === "success" ? "var(--emerald)" : "var(--red)",
+                  fontSize: "0.9375rem",
                 }}>
                 {msg.type === "success"
                   ? <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
@@ -207,7 +205,7 @@ export default function UploadPage() {
             )}
           </div>
 
-          {/* ── Uploaded files ───────────────────────── */}
+          {/* Uploaded files */}
           <div>
             <h3 style={{ fontFamily: "Manrope, sans-serif", fontSize: "1.125rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "0.875rem" }}>
               Uploaded Files
@@ -245,20 +243,23 @@ export default function UploadPage() {
                         {f.original_name || f.name}
                       </p>
                       <div className="flex items-center gap-4 mt-1">
-                        <span style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>
-                          {f.rows.toLocaleString()} rows
-                        </span>
-                        <span style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>
-                          {f.columns.length} columns
-                        </span>
-                        {f.size_bytes && (
-                          <span style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>
-                            {fmtSize(f.size_bytes)}
-                          </span>
-                        )}
+                        <span style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>{f.rows.toLocaleString()} rows</span>
+                        <span style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>{f.columns.length} columns</span>
+                        {f.size_bytes && <span style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>{fmtSize(f.size_bytes)}</span>}
                       </div>
                     </div>
                     <span className="badge badge-emerald">Ready</span>
+                    <button
+                      onClick={() => router.push(`/dashboard/csv-chat?file=${encodeURIComponent(f.name)}`)}
+                      style={{
+                        padding: "7px 16px", borderRadius: 9,
+                        background: "linear-gradient(135deg, #9D0039, #E8005A)",
+                        color: "white", border: "none", cursor: "pointer",
+                        fontSize: "0.85rem", fontWeight: 600,
+                        display: "flex", alignItems: "center", gap: 6,
+                      }}>
+                      <MessageSquare style={{ width: 14, height: 14 }} /> Chat
+                    </button>
                     <button onClick={() => deleteFile(f.name)}
                       className="p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
                       style={{ color: "var(--red)" }} title="Delete">
@@ -270,7 +271,7 @@ export default function UploadPage() {
             )}
           </div>
 
-          {/* ── Tips ─────────────────────────────────── */}
+          {/* Tips */}
           <div className="card-pro" style={{ background: "var(--brand-dim)", border: "1.5px solid var(--brand-border)" }}>
             <h4 style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, color: "var(--brand)", marginBottom: "0.75rem" }}>
               Tips for best AI results
@@ -281,7 +282,7 @@ export default function UploadPage() {
                 "Use descriptive column names without special characters",
                 "Numeric columns should contain only numbers — no currency symbols",
                 "Dates work best in YYYY-MM-DD format",
-                "After uploading, select your file from the Dataset Picker in the Chat tab",
+                "After uploading, click Chat to start analyzing your data instantly",
                 "Large files may take a moment — do not close the tab during upload",
               ].map((tip, i) => (
                 <li key={i} className="flex items-start gap-3" style={{ fontSize: "0.9375rem", color: "var(--text-secondary)" }}>

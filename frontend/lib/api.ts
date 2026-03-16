@@ -5,7 +5,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 export const api = axios.create({
   baseURL: API_URL,
   headers: { "Content-Type": "application/json" },
-  // 1GB timeout for large uploads
   timeout: 0,
 });
 
@@ -38,8 +37,10 @@ export const authApi = {
 };
 
 export const chatApi = {
-  query: (question: string, csv_name?: string) =>
+  query:     (question: string, csv_name?: string) =>
     api.post("/api/chat/query", { question, csv_name }),
+  csvQuery:  (question: string, csv_name: string) =>
+    api.post("/api/chat/csv-query", { question, csv_name }),
   suggestions: () => api.get("/api/chat/suggestions"),
 };
 
@@ -55,7 +56,6 @@ export const uploadApi = {
     fd.append("file", file);
     return api.post("/api/upload/csv", fd, {
       headers: { "Content-Type": "multipart/form-data" },
-      // No timeout for large files
       timeout: 0,
       onUploadProgress: (e) => {
         if (e.total) {
@@ -65,8 +65,9 @@ export const uploadApi = {
       },
     });
   },
-  list:   ()             => api.get("/api/upload/list"),
-  delete: (name: string) => api.delete(`/api/upload/csv/${name}`),
+  list:   ()               => api.get("/api/upload/list"),
+  delete: (name: string)   => api.delete(`/api/upload/csv/${name}`),
+  meta:   (name: string)   => api.get(`/api/upload/meta/${name}`),  // ✅ new
 };
 
 export const exportDownload = async (type: "csv" | "pdf", id: number) => {

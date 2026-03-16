@@ -7,6 +7,20 @@ import dynamic from "next/dynamic";
 
 const ChartRenderer = dynamic(() => import("@/components/charts/ChartRenderer"), { ssr: false });
 
+// ✅ outside component — no strict mode error
+function round(n: number, d: number) {
+  return Math.round(n * Math.pow(10, d)) / Math.pow(10, d);
+}
+
+function timeAgo(d: string) {
+  const diff = Date.now() - new Date(d).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
 interface HistoryDetail {
   id: number;
   question: string;
@@ -17,13 +31,33 @@ interface HistoryDetail {
   result_json?: string;
 }
 
-function timeAgo(d: string) {
-  const diff = Date.now() - new Date(d).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
+const SOLID = ["#9D0039","#C4004A","#E8005A","#FF4D8F","#6B0027","#FF79A8","#B8003F","#F50057","#800029","#FF1744","#D81B60","#F06292"];
+const ALPHA = ["rgba(157,0,57,0.82)","rgba(196,0,74,0.82)","rgba(232,0,90,0.82)","rgba(255,77,143,0.82)","rgba(107,0,39,0.82)","rgba(255,121,168,0.82)","rgba(184,0,63,0.82)","rgba(245,0,87,0.82)","rgba(128,0,41,0.82)","rgba(255,23,68,0.82)","rgba(216,27,96,0.82)","rgba(240,98,146,0.82)"];
+
+function buildChartData(tableData: Record<string, unknown>[], chartType: string) {
+  if (!tableData.length || chartType === "table") return null;
+
+  const keys = Object.keys(tableData[0]);
+  const xCol = keys.find(k => isNaN(Number(tableData[0][k]))) || keys[0];
+  const yCol = keys.find(k => k !== xCol && !isNaN(Number(tableData[0][k]))) || keys[1];
+
+  const labels = tableData.map(r => String(r[xCol] ?? "").slice(0, 32));
+  const values = tableData.map(r => {
+    try { return round(parseFloat(String(r[yCol] ?? 0)), 2); } catch { return 0; }
+  });
+
+  const ct = chartType;
+  if (ct === "pie" || ct === "doughnut") {
+    return { labels, datasets: [{ label: yCol, data: values, backgroundColor: ALPHA.slice(0, values.length), borderColor: SOLID.slice(0, values.length), borderWidth: 2.5, hoverOffset: 12 }] };
+  }
+  if (ct === "radar") {
+    return { labels: labels.slice(0, 8), datasets: [{ label: yCol, data: values.slice(0, 8), backgroundColor: "rgba(157,0,57,0.15)", borderColor: "#9D0039", borderWidth: 2.5, pointBackgroundColor: "#9D0039", pointBorderColor: "#fff", pointRadius: 5 }] };
+  }
+  if (ct === "line" || ct === "area") {
+    return { labels, datasets: [{ label: yCol, data: values, backgroundColor: "rgba(157,0,57,0.10)", borderColor: "#9D0039", borderWidth: 2.5, fill: ct === "area", tension: 0.4, pointBackgroundColor: "#9D0039", pointBorderColor: "#fff", pointBorderWidth: 2, pointRadius: 5, pointHoverRadius: 8 }] };
+  }
+  // bar default
+  return { labels, datasets: [{ label: yCol, data: values, backgroundColor: ALPHA.slice(0, values.length), borderColor: SOLID.slice(0, values.length), borderWidth: 0, borderRadius: 10, borderSkipped: false }] };
 }
 
 export default function HistoryDetailPage() {
@@ -62,14 +96,12 @@ export default function HistoryDetailPage() {
     </div>
   );
 
-  // Parse saved data
   let tableData: Record<string, unknown>[] | null = null;
-  let chartData: unknown = null;
   try {
-    if (item.result_json) {
-      tableData = JSON.parse(item.result_json);
-    }
+    if (item.result_json) tableData = JSON.parse(item.result_json);
   } catch { /* ignore */ }
+
+  const chartData = tableData ? buildChartData(tableData, item.chart_type) : null;
 
   return (
     <div className="h-screen flex flex-col" style={{ background: "var(--bg-base)" }}>
@@ -111,7 +143,7 @@ export default function HistoryDetailPage() {
         <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", flexDirection: "column", gap: 20 }}>
 
           {/* Chart */}
-          {tableData && tableData.length > 0 && (
+          {(chartData || (tableData && tableData.length > 0)) && (
             <div style={{
               background: "var(--bg-card)", border: "1.5px solid var(--border-subtle)",
               borderRadius: 20, padding: "24px 24px 18px",
@@ -212,6 +244,7 @@ export default function HistoryDetailPage() {
               )}
             </div>
           )}
+
         </div>
       </div>
     </div>

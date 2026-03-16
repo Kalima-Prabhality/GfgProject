@@ -17,7 +17,7 @@ def is_safe_query(sql: str) -> tuple[bool, str]:
             return False, f"Blocked keyword: {kw}"
     if "PG_" in up or "INFORMATION_SCHEMA" in up:
         return False, "System tables blocked."
-    tables = re.findall(r'\bFROM\s+(\w+)', up) + re.findall(r'\bJOIN\s+(\w+)', up)
+    tables = re.findall(r'\bFROM\s+([a-zA-Z_]+)', up) + re.findall(r'\bJOIN\s+([a-zA-Z_]+)', up)
     for t in tables:
         if t.lower() not in ("campaigns",):
             return False, f"Table '{t}' not allowed."

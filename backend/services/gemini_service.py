@@ -1,13 +1,19 @@
-import httpx
+# backend/services/gemini_service.py
+
 import json
 import re
 import logging
-from models.database import settings
+import os
+from dotenv import load_dotenv
+from groq import Groq
 
+load_dotenv()
 logger = logging.getLogger(__name__)
 
-GEMINI_KEY = settings.GEMINI_API_KEY
-GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
+GROQ_KEY = os.getenv("GROQ_API_KEY")
+if not GROQ_KEY:
+    raise ValueError("GROQ_API_KEY missing in .env")
+
 SCHEMA = """
 PostgreSQL table: campaigns
 Exact column names (use as-is, lowercase):
@@ -29,21 +35,25 @@ Exact column names (use as-is, lowercase):
   date             TIMESTAMP
 """
 
+# ---------------- GROQ CALL ---------------- #
 async def _gemini(prompt: str) -> str:
-    if not GEMINI_KEY:
-        raise ValueError("GEMINI_API_KEY missing in .env")
-    payload = {
-        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.1, "maxOutputTokens": 1024}
-    }
-    async with httpx.AsyncClient(timeout=30) as client:
-        r = await client.post(GEMINI_URL, json=payload)
-        if r.status_code != 200:
-            raise ValueError(f"Gemini HTTP {r.status_code}: {r.text[:200]}")
-        d = r.json()
-        return d["candidates"][0]["content"]["parts"][0]["text"].strip()
+    if not GROQ_KEY:
+        raise ValueError("GROQ_API_KEY missing in .env")
+    try:
+        client = Groq(api_key=GROQ_KEY)
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1,
+            max_tokens=1024,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        logger.error(f"Groq error: {e}")
+        raise ValueError(f"Groq request failed: {e}")
 
 
+# ---------------- NATURAL LANGUAGE TO SQL ---------------- #
 async def natural_language_to_sql(question: str) -> dict:
     prompt = f"""You are a PostgreSQL expert for Nykaa beauty brand analytics.
 
@@ -52,40 +62,51 @@ DATABASE:
 
 QUESTION: "{question}"
 
-Write a PostgreSQL SELECT query that answers the question exactly.
+STRICT AGGREGATION RULES — FOLLOW EXACTLY:
+- revenue question → ROUND(SUM(revenue)::numeric, 2) AS total_revenue
+- roi question     → ROUND(AVG(roi)::numeric, 2) AS avg_roi
+- conversions      → SUM(conversions) AS total_conversions
+- clicks           → SUM(clicks) AS total_clicks
+- impressions      → SUM(impressions) AS total_impressions
+- leads            → SUM(leads) AS total_leads
+- acquisition_cost → ROUND(AVG(acquisition_cost)::numeric, 2) AS avg_acquisition_cost
+- engagement_score → ROUND(AVG(engagement_score)::numeric, 2) AS avg_engagement_score
+- NEVER use bare column names without aggregation when GROUP BY is present
+- ALWAYS GROUP BY the category column
+- ALWAYS ORDER BY the metric column DESC
+- LIMIT 10
 
-RULES:
-1. Only SELECT — never INSERT/UPDATE/DELETE/DROP
-2. Use exact column names from schema above
-3. ROUND(value::numeric, 2) for float aggregations
-4. Always GROUP BY for aggregations
-5. ORDER BY main metric DESC
-6. LIMIT 12 max
-7. Return ONLY the JSON below — no markdown no explanation
+TIME TREND RULE:
+If question involves time/trend/monthly:
+  SELECT DATE_TRUNC('month', date) AS month, ROUND(SUM(revenue)::numeric, 2) AS total_revenue
+  FROM campaigns
+  GROUP BY DATE_TRUNC('month', date)
+  ORDER BY DATE_TRUNC('month', date)
 
-CHART RULES:
-- bar: comparing named categories (campaign_type, channel_used, language, target_audience, customer_segment)
-- line: time trend (involves date column, GROUP BY month/year)
-- pie: share/proportion, 3-6 items
-- doughnut: share/proportion, 4-8 items
-- radar: multiple metrics across categories (3-8 items)
+CHART TYPE RULES:
+- bar: comparing categories (campaign_type, channel_used, language, target_audience, customer_segment)
+- line: time trend (date column)
+- pie: share/proportion 3-6 items
+- doughnut: share/proportion 4-8 items
+- radar: multiple metrics across categories
 - area: cumulative over time
-- table: raw records, no single metric
+- table: raw records
 
-RESPOND ONLY WITH THIS JSON:
+RESPOND ONLY WITH THIS EXACT JSON — no markdown, no explanation, no extra text:
+
 {{
-  "sql": "SELECT campaign_type, ROUND(SUM(revenue)::numeric,2) AS total_revenue FROM campaigns GROUP BY campaign_type ORDER BY total_revenue DESC LIMIT 10",
-  "chart_type": "bar",
-  "x_axis": "campaign_type",
-  "y_axis": "total_revenue",
-  "chart_title": "Revenue by Campaign Type"
+  "sql": "<your SELECT query here>",
+  "chart_type": "<bar|line|pie|doughnut|area|radar|table>",
+  "x_axis": "<first column name in SELECT>",
+  "y_axis": "<metric column alias like total_revenue>",
+  "chart_title": "<short title>"
 }}"""
 
     raw = await _gemini(prompt)
-    logger.info(f"Gemini raw: {raw[:300]}")
+    logger.info(f"Groq raw: {raw[:300]}")
 
     clean = re.sub(r"```(?:json)?", "", raw).strip().rstrip("`").strip()
-    m = re.search(r'\{[^{}]*"sql"[^{}]*\}', clean, re.DOTALL)
+    m = re.search(r'\{.*"sql".*\}', clean, re.DOTALL)
     if m:
         clean = m.group(0)
 
@@ -98,6 +119,7 @@ RESPOND ONLY WITH THIS JSON:
     return result
 
 
+# ---------------- GENERATE INSIGHTS ---------------- #
 async def generate_insights(question: str, sql: str, data: list[dict]) -> str:
     if not data:
         return "No data returned. Try rephrasing your question."
@@ -121,101 +143,98 @@ Write exactly 3 bullet insights:
         return f"- **{len(data)} records** matched your query. Review the chart above for key patterns and trends."
 
 
+# ---------------- DETERMINE CHART DATA ---------------- #
 def determine_chart_data(data: list[dict], chart_type: str, x_axis: str, y_axis: str) -> dict:
-    if not data or chart_type == "table":
-        return {}
+    if not data:
+        return None
+
+    if chart_type == "table":
+        return {"labels": [], "datasets": []}
 
     keys = list(data[0].keys())
     logger.info(f"Columns available: {keys}")
     logger.info(f"x_axis hint: '{x_axis}', y_axis hint: '{y_axis}'")
 
-    # Find X col — prefer exact match, then first text column
-    x_col = None
-    if x_axis and x_axis in keys:
-        x_col = x_axis
-    else:
-        for k in keys:
-            v = str(data[0].get(k, ""))
-            try:
-                float(v)
-            except (ValueError, TypeError):
-                if v.strip() not in ("", "None", "null"):
-                    x_col = k
-                    break
-    if not x_col:
-        x_col = keys[0]
+    # Pick x column — prefer text/category column
+    x_col = x_axis if x_axis in keys else next(
+        (k for k in keys if not is_number(str(data[0].get(k, "")))), keys[0]
+    )
 
-    # Find Y col — prefer exact match, then first numeric column != x
+    # Pick y column — prefer the alias like total_revenue, avg_roi etc.
+    preferred_y = ["total_revenue", "avg_roi", "total_conversions", "total_clicks",
+                   "total_impressions", "total_leads", "avg_acquisition_cost", "avg_engagement_score"]
+
     y_col = None
-    if y_axis and y_axis in keys:
+    if y_axis in keys:
         y_col = y_axis
     else:
-        for k in keys:
-            if k == x_col:
-                continue
-            v = str(data[0].get(k, "0")).replace(",", "").strip()
-            try:
-                float(v)
-                y_col = k
+        for p in preferred_y:
+            if p in keys:
+                y_col = p
                 break
-            except (ValueError, TypeError):
-                continue
     if not y_col:
-        others = [k for k in keys if k != x_col]
-        y_col = others[0] if others else keys[-1]
+        y_col = next((k for k in keys if k != x_col and is_number(str(data[0].get(k, 0)))), keys[-1])
 
-    logger.info(f"Final: x_col={x_col}, y_col={y_col}")
+    logger.info(f"Using x_col={x_col}, y_col={y_col}")
 
     labels, values = [], []
     for row in data:
         labels.append(str(row.get(x_col, ""))[:32])
-        raw = str(row.get(y_col, "0") or "0").replace(",", "").strip()
         try:
-            values.append(round(float(raw), 2))
-        except (ValueError, TypeError):
+            values.append(round(float(str(row.get(y_col, 0)).replace(",", "").strip()), 2))
+        except Exception:
             values.append(0.0)
 
-    logger.info(f"Labels: {labels[:4]}")
-    logger.info(f"Values: {values[:4]}")
+    logger.info(f"Final labels: {labels}")
+    logger.info(f"Final values: {values}")
 
-    n = len(values)
-    y_label = y_col.replace("_", " ").title()
-
-    # Deep wine red + pink palette matching Nykaa brand
+    # Nykaa color palettes
     SOLID = ["#9D0039","#C4004A","#E8005A","#FF4D8F","#6B0027","#FF79A8","#B8003F","#F50057","#800029","#FF1744","#D81B60","#F06292"]
     ALPHA = ["rgba(157,0,57,0.82)","rgba(196,0,74,0.82)","rgba(232,0,90,0.82)","rgba(255,77,143,0.82)","rgba(107,0,39,0.82)","rgba(255,121,168,0.82)","rgba(184,0,63,0.82)","rgba(245,0,87,0.82)","rgba(128,0,41,0.82)","rgba(255,23,68,0.82)","rgba(216,27,96,0.82)","rgba(240,98,146,0.82)"]
 
     if chart_type in ("pie", "doughnut"):
         return {
             "labels": labels,
-            "datasets": [{"label": y_label, "data": values,
-                "backgroundColor": ALPHA[:n], "borderColor": SOLID[:n],
-                "borderWidth": 2.5, "hoverOffset": 12}]
+            "datasets": [{"label": y_col, "data": values,
+                          "backgroundColor": ALPHA[:len(values)],
+                          "borderColor": SOLID[:len(values)],
+                          "borderWidth": 2.5, "hoverOffset": 12}]
         }
-
     if chart_type == "radar":
         return {
             "labels": labels[:8],
-            "datasets": [{"label": y_label, "data": values[:8],
-                "backgroundColor": "rgba(157,0,57,0.15)", "borderColor": "#9D0039",
-                "borderWidth": 2.5, "pointBackgroundColor": "#9D0039",
-                "pointBorderColor": "#fff", "pointRadius": 5}]
+            "datasets": [{"label": y_col, "data": values[:8],
+                          "backgroundColor": "rgba(157,0,57,0.15)",
+                          "borderColor": "#9D0039", "borderWidth": 2.5,
+                          "pointBackgroundColor": "#9D0039",
+                          "pointBorderColor": "#fff", "pointRadius": 5}]
         }
-
     if chart_type in ("line", "area"):
         return {
             "labels": labels,
-            "datasets": [{"label": y_label, "data": values,
-                "backgroundColor": "rgba(157,0,57,0.10)", "borderColor": "#9D0039",
-                "borderWidth": 2.5, "fill": chart_type == "area", "tension": 0.4,
-                "pointBackgroundColor": "#9D0039", "pointBorderColor": "#fff",
-                "pointBorderWidth": 2, "pointRadius": 5, "pointHoverRadius": 8}]
+            "datasets": [{"label": y_col, "data": values,
+                          "backgroundColor": "rgba(157,0,57,0.10)",
+                          "borderColor": "#9D0039", "borderWidth": 2.5,
+                          "fill": chart_type == "area", "tension": 0.4,
+                          "pointBackgroundColor": "#9D0039",
+                          "pointBorderColor": "#fff", "pointBorderWidth": 2,
+                          "pointRadius": 5, "pointHoverRadius": 8}]
         }
-
-    # Bar — each bar its own Nykaa color
+    # bar (default)
     return {
         "labels": labels,
-        "datasets": [{"label": y_label, "data": values,
-            "backgroundColor": ALPHA[:n], "borderColor": SOLID[:n],
-            "borderWidth": 0, "borderRadius": 10, "borderSkipped": False}]
+        "datasets": [{"label": y_col, "data": values,
+                      "backgroundColor": ALPHA[:len(values)],
+                      "borderColor": SOLID[:len(values)],
+                      "borderWidth": 0, "borderRadius": 10,
+                      "borderSkipped": False}]
     }
+
+
+# ---------------- HELPERS ---------------- #
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except Exception:
+        return False

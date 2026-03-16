@@ -41,7 +41,7 @@ async def query_chat(
 
     # Step 2 — Run SQL on PostgreSQL (sync)
     try:
-        data, exec_ms = execute_query(db, sql)
+        data, exec_ms = await execute_query(db, sql)
     except ValueError as e:
         raise HTTPException(400, str(e))
 
@@ -52,6 +52,9 @@ async def query_chat(
 
     # Step 4 — Build chart data
     chart_data = determine_chart_data(data, chart_type, x_axis, y_axis)
+
+    logger.info(f"Chart type: {chart_type}")
+    logger.info(f"Chart data: {chart_data}")
     logger.info(f"Chart data labels: {chart_data.get('labels', [])[:3] if chart_data else 'EMPTY'}")
     logger.info(f"Chart data values: {chart_data.get('datasets', [{}])[0].get('data', [])[:3] if chart_data else 'EMPTY'}")
 

@@ -14,10 +14,15 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointEleme
 export interface AppChartData {
   labels: string[];
   datasets: {
-    label: string; data: number[];
-    backgroundColor: string | string[]; borderColor: string | string[];
-    borderWidth: number; fill?: boolean; tension?: number;
-    borderRadius?: number; pointRadius?: number;
+    label: string;
+    data: number[];
+    backgroundColor?: string | string[];
+    borderColor?: string | string[];
+    borderWidth?: number;
+    fill?: boolean;
+    tension?: number;
+    borderRadius?: number;
+    pointRadius?: number;
   }[];
 }
 
@@ -47,7 +52,7 @@ export default function ChartRenderer({ chartType, chartData, tableData, history
     tooltip: {
       backgroundColor: tooltipBg, borderColor: tooltipBdr, borderWidth: 1,
       titleColor: "#0F0E1A", bodyColor: "rgba(61,59,82,0.9)",
-      padding: 12, cornerRadius: 10, titleFont: { family: "'Clash Display', sans-serif", weight: "600" as const },
+      padding: 12, cornerRadius: 10, titleFont: { family: "'Clash Display', sans-serif", weight: 600 as const },
     },
   };
 
@@ -58,7 +63,7 @@ export default function ChartRenderer({ chartType, chartData, tableData, history
 
   const barOpts: ChartOptions<"bar"> = {
     responsive: true, maintainAspectRatio: false, animation: { duration: 600 },
-    plugins: { ...sharedPlugins, title: title ? { display: true, text: title, color: "#0F0E1A", font: { family: "'Clash Display', sans-serif", size: 14, weight: "600" as const } } : undefined },
+    plugins: { ...sharedPlugins, title: title ? { display: true, text: title, color: "#0F0E1A", font: { family: "'Clash Display', sans-serif", size: 14, weight: 600 as const } } : undefined },
     scales: sharedScales,
   };
   const lineOpts: ChartOptions<"line"> = { responsive: true, maintainAspectRatio: false, animation: { duration: 600 }, plugins: sharedPlugins, scales: sharedScales };
@@ -88,6 +93,7 @@ export default function ChartRenderer({ chartType, chartData, tableData, history
       ...data,
       datasets: data.datasets.map((ds, i) => ({
         ...ds,
+        borderWidth: 2,
         backgroundColor: chartType === "pie" || chartType === "doughnut"
           ? LIGHT_COLORS_A.slice(0, data.labels.length)
           : LIGHT_COLORS_A[i % LIGHT_COLORS_A.length],
@@ -107,7 +113,7 @@ export default function ChartRenderer({ chartType, chartData, tableData, history
   const H = 300;
 
   const renderChart = () => {
-    if (!coloredData) return null;
+    if (!coloredData || !coloredData.labels?.length) return null;
     const bd = coloredData as unknown as ChartJSData<"bar">;
     const ld = coloredData as unknown as ChartJSData<"line">;
     const pd = coloredData as unknown as ChartJSData<"pie">;

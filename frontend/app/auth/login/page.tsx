@@ -50,7 +50,7 @@ export default function LoginPage() {
             ))}
           </div>
         </div>
-        <p className="relative text-white/40 text-sm">Powered by Google Gemini 1.5 Flash</p>
+        <p className="relative text-white/40 text-sm">Powered by Groq</p>
       </div>
 
       {/* Right panel */}

@@ -46,7 +46,7 @@ export default function HistoryPage() {
   }, []);
 
   const chartTypes = useMemo(() => {
-    const types = [...new Set(items.map(i => i.chart_type).filter(Boolean))];
+    const types = Array.from(new Set(items.map(i => i.chart_type).filter(Boolean)));
     return types;
   }, [items]);
 

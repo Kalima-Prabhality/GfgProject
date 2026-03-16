@@ -54,7 +54,7 @@ export default function RegisterPage() {
             ))}
           </div>
         </div>
-        <p className="relative text-white/40 text-sm">Powered by Google Gemini 1.5 Flash</p>
+        <p className="relative text-white/40 text-sm">Powered by Groq</p>
       </div>
 
       <div className="flex-1 flex items-center justify-center p-8">

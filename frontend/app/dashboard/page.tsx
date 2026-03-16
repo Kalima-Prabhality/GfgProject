@@ -377,7 +377,7 @@ export default function ChatPage() {
             <div className="flex items-center gap-1.5">
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--emerald)", boxShadow: "0 0 6px var(--emerald)" }} />
               <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                Gemini 1.5 Flash · Nykaa campaigns database
+                Groq · Nykaa campaigns database
               </span>
             </div>
           </div>
@@ -414,7 +414,7 @@ export default function ChatPage() {
             </h2>
 
             <p style={{ fontSize: "1.0625rem", color: "var(--text-muted)", maxWidth: 540, lineHeight: 1.75, marginBottom: 8 }}>
-              I&apos;m powered by <strong style={{ color: "var(--brand)" }}>Google Gemini 1.5 Flash</strong> and have direct access
+              I&apos;m powered by <strong style={{ color: "var(--brand)" }}>Groq</strong> and have direct access
               to Nykaa&apos;s marketing campaign database with <strong style={{ color: "var(--text-primary)" }}>55,000+ records</strong>.
             </p>
 
@@ -549,7 +549,7 @@ export default function ChatPage() {
 
                   {!msg.loading && (
                     <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: 6, paddingLeft: 2 }}>
-                      Gemini 1.5 Flash · {timeStr(msg.ts)}
+                      Groq · {timeStr(msg.ts)}
                     </p>
                   )}
                 </div>
@@ -594,7 +594,7 @@ export default function ChatPage() {
             </button>
           </div>
           <p style={{ textAlign: "center", fontSize: "0.775rem", color: "var(--text-disabled)", marginTop: 9 }}>
-            Enter to send · Shift+Enter for new line · Remembers full conversation · Powered by Google Gemini
+            Enter to send · Shift+Enter for new line · Remembers full conversation · Powered by Groq
           </p>
         </div>
       </div>

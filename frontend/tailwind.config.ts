@@ -1,0 +1,67 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  darkMode: ["class", '[data-theme="dark"]'],
+  content: [
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        border:     "hsl(var(--border))",
+        input:      "hsl(var(--input))",
+        ring:       "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary:    { DEFAULT: "hsl(var(--primary))", foreground: "hsl(var(--primary-foreground))" },
+        secondary:  { DEFAULT: "hsl(var(--secondary))", foreground: "hsl(var(--secondary-foreground))" },
+        destructive:{ DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
+        muted:      { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
+        accent:     { DEFAULT: "hsl(var(--accent-tw))", foreground: "hsl(var(--accent-foreground))" },
+        card:       { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },
+      },
+      fontFamily: {
+        display: ["Clash Display", "sans-serif"],
+        sans:    ["Satoshi", "Inter", "-apple-system", "sans-serif"],
+        mono:    ["JetBrains Mono", "monospace"],
+      },
+      fontSize: {
+        "2xs": ["0.6875rem", { lineHeight: "1rem" }],
+        xs:    ["0.75rem",   { lineHeight: "1.125rem" }],
+        sm:    ["0.8125rem", { lineHeight: "1.25rem" }],
+        base:  ["0.9375rem", { lineHeight: "1.65rem" }],
+        md:    ["1.0625rem", { lineHeight: "1.5rem" }],
+        lg:    ["1.25rem",   { lineHeight: "1.75rem" }],
+        xl:    ["1.4rem",    { lineHeight: "1.875rem" }],
+        "2xl": ["2rem",      { lineHeight: "1.2rem" }],
+        "3xl": ["2.25rem",   { lineHeight: "1.1rem" }],
+        "4xl": ["3.25rem",   { lineHeight: "1.08rem" }],
+      },
+      borderRadius: { sm: "6px", md: "10px", lg: "14px", xl: "18px", "2xl": "24px" },
+      keyframes: {
+        "fade-up":    { "0%": { opacity: "0", transform: "translateY(12px)" }, "100%": { opacity: "1", transform: "translateY(0)" } },
+        "fade-in":    { "0%": { opacity: "0" }, "100%": { opacity: "1" } },
+        "pop-in":     { "0%": { opacity: "0", transform: "scale(0.92)" }, "100%": { opacity: "1", transform: "scale(1)" } },
+        shimmer:      { "0%": { backgroundPosition: "200% 0" }, "100%": { backgroundPosition: "-200% 0" } },
+        "typing-dot": { "0%,60%,100%": { transform: "translateY(0)", opacity: "0.4" }, "30%": { transform: "translateY(-5px)", opacity: "1" } },
+        float:        { "0%,100%": { transform: "translateY(0)" }, "50%": { transform: "translateY(-8px)" } },
+      },
+      animation: {
+        "fade-up":    "fade-up 0.30s ease-out both",
+        "fade-in":    "fade-in 0.25s ease-out both",
+        "pop-in":     "pop-in 0.25s cubic-bezier(0.34,1.56,0.64,1) both",
+        shimmer:      "shimmer 1.6s linear infinite",
+        "typing-dot": "typing-dot 1.2s ease-in-out infinite",
+        float:        "float 3s ease-in-out infinite",
+      },
+      boxShadow: {
+        card:  "0 4px 24px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05)",
+        brand: "0 8px 24px rgba(99,102,241,0.22), 0 2px 6px rgba(99,102,241,0.12)",
+        float: "0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.08)",
+        sm:    "0 1px 4px rgba(0,0,0,0.06)",
+      },
+    },
+  },
+  plugins: [require("tailwindcss-animate")],
+};

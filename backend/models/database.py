@@ -21,7 +21,7 @@ SECRET_KEY                  = os.getenv("SECRET_KEY",  "e07d244479885ebd34ad6350
 ALGORITHM                   = os.getenv("ALGORITHM",   "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))
 GEMINI_API_KEY              = os.getenv("GEMINI_API_KEY", "AIzaSyDWjSEptW0w9W36r9BX7PGz8Lt4TYbWVTQ")
-ENVIRONMENT                 = os.getenv("ENVIRONMENT",  "development")
+ENVIRONMENT                 = os.getenv("ENVIRONMENT",  "production")
 FRONTEND_URL                = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 print(f">>> Connecting to database...")

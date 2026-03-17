@@ -13,15 +13,19 @@ DATABASE_URL = os.getenv(
     "postgresql+psycopg2://postgres:Kalima2007@localhost:5432/nykaa_bi"
 )
 
-# Render uses postgres:// but SQLAlchemy needs postgresql+psycopg2://
+# Fix URL format for Render
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
+
 if DATABASE_URL.startswith("postgresql://") and "+psycopg2" not in DATABASE_URL:
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
 
 SECRET_KEY                  = os.getenv("SECRET_KEY",  "e07d244479885ebd34ad635035c72d5a0e586635e7d9998b3a0d9bd1617d2fb4")
 ALGORITHM                   = os.getenv("ALGORITHM",   "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))
-GEMINI_API_KEY              = os.getenv("GEMINI_API_KEY", "AIzaSyDWjSEptW0w9W36r9BX7PGz8Lt4TYbWVTQ")
-ENVIRONMENT                 = os.getenv("ENVIRONMENT",  "production")
+GEMINI_API_KEY              = os.getenv("GEMINI_API_KEY", "")
+GROQ_API_KEY                = os.getenv("GROQ_API_KEY", "")
+ENVIRONMENT                 = os.getenv("ENVIRONMENT",  "development")
 FRONTEND_URL                = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 print(f">>> Connecting to database...")
@@ -31,6 +35,7 @@ class _Settings:
     ALGORITHM                   = ALGORITHM
     ACCESS_TOKEN_EXPIRE_MINUTES = ACCESS_TOKEN_EXPIRE_MINUTES
     GEMINI_API_KEY              = GEMINI_API_KEY
+    GROQ_API_KEY                = GROQ_API_KEY
     ENVIRONMENT                 = ENVIRONMENT
     FRONTEND_URL                = FRONTEND_URL
 

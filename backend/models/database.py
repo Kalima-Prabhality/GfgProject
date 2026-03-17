@@ -1,3 +1,4 @@
+import os
 from sqlalchemy import (
     Column, String, Integer, Float, Text, DateTime, ForeignKey,
     Boolean, MetaData, create_engine
@@ -6,20 +7,24 @@ from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from sqlalchemy.sql import func
 from typing import Generator
 
-# ── Hardcoded from .env ──────────────────────────────────────
-DB_HOST     = "localhost"
-DB_PORT     = "5432"
-DB_NAME     = "nykaa_bi"
-DB_USER     = "postgres"
-DB_PASSWORD = "Kalima2007"
+# ── Read from environment variables ──────────────────────────
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql+psycopg2://postgres:Kalima2007@localhost:5432/nykaa_bi"
+)
 
-SECRET_KEY                  = "e07d244479885ebd34ad635035c72d5a0e586635e7d9998b3a0d9bd1617d2fb4"
-ALGORITHM                   = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 10080
-GEMINI_API_KEY              = "AIzaSyDkMiTG9u-UKiw0t7jJEewDuZCi4qvx5v4"
-ENVIRONMENT                 = "development"
-FRONTEND_URL                = "http://localhost:3000"
+# Render uses postgres:// but SQLAlchemy needs postgresql+psycopg2://
+if DATABASE_URL.startswith("postgresql://") and "+psycopg2" not in DATABASE_URL:
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
 
+SECRET_KEY                  = os.getenv("SECRET_KEY",  "e07d244479885ebd34ad635035c72d5a0e586635e7d9998b3a0d9bd1617d2fb4")
+ALGORITHM                   = os.getenv("ALGORITHM",   "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))
+GEMINI_API_KEY              = os.getenv("GEMINI_API_KEY", "AIzaSyDWjSEptW0w9W36r9BX7PGz8Lt4TYbWVTQ")
+ENVIRONMENT                 = os.getenv("ENVIRONMENT",  "development")
+FRONTEND_URL                = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
+print(f">>> Connecting to database...")
 
 class _Settings:
     SECRET_KEY                  = SECRET_KEY
@@ -29,12 +34,7 @@ class _Settings:
     ENVIRONMENT                 = ENVIRONMENT
     FRONTEND_URL                = FRONTEND_URL
 
-
 settings = _Settings()
-
-DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-
-print(f">>> Connecting: {DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
 
 engine       = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

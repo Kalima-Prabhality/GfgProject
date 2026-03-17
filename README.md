@@ -424,4 +424,4 @@ Full interactive docs: `http://localhost:8000/docs`
 
 ---
 
-Built for Hackathon 🏆 | Powered by Google Gemini
+

@@ -360,7 +360,7 @@ export default function ChatPage() {
 
       {/* ── TOP BAR ─────────────────────────────────────────── */}
       <div className="flex-shrink-0 glass flex items-center justify-between px-6"
-        style={{ height: 62, borderBottom: "1px solid var(--border-subtle)" }}>
+        style={{ height: 64, borderBottom: "1px solid var(--border-subtle)", flexWrap: "wrap" }}>
         <div className="flex items-center gap-3">
           <div style={{
             width: 38, height: 38, borderRadius: 12, flexShrink: 0,
@@ -370,17 +370,17 @@ export default function ChatPage() {
           }}>
             <Bot className="w-5 h-5 text-white" />
           </div>
-          <div>
-            <p className="font-display" style={{ fontSize: "1.125rem", fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.2 }}>
-              Nykaa BI Assistant
-            </p>
-            <div className="flex items-center gap-1.5">
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--emerald)", boxShadow: "0 0 6px var(--emerald)" }} />
-              <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                Groq · Nykaa campaigns database
-              </span>
-            </div>
-          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingTop: 2 }}>
+  <p className="font-display" style={{ fontSize: "1.125rem", fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.2, margin: 0 }}>
+    Nykaa BI Assistant
+  </p>
+  <div className="flex items-center gap-1.5">
+    <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--emerald)", boxShadow: "0 0 6px var(--emerald)" }} />
+    <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+      Groq · Nykaa campaigns database
+    </span>
+  </div>
+</div>
         </div>
         {messages.length > 0 && (
           <button

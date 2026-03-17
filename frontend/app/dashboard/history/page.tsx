@@ -77,7 +77,7 @@ export default function HistoryPage() {
       {/* ── Header ── */}
       <div className="flex-shrink-0 glass flex items-center justify-between px-6"
         style={{ height: 64, borderBottom: "1px solid var(--border-subtle)" }}>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3" style={{ flexShrink: 0 }}>
           <div style={{
             width: 38, height: 38, borderRadius: 11, flexShrink: 0,
             background: "linear-gradient(135deg, var(--brand), var(--accent))",
@@ -86,13 +86,14 @@ export default function HistoryPage() {
           }}>
             <History style={{ width: 18, height: 18, color: "white" }} />
           </div>
-          <div>
-            <h1 style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: "1.25rem", fontWeight: 700,
-              color: "var(--text-primary)", lineHeight: 1.2,
-            }}>Query History</h1>
-            <p style={{ fontSize: "0.8125rem", color: "var(--text-muted)", marginTop: -2 }}>
+          <div style={{ paddingTop: 23 }}>
+  <h1 style={{
+    fontFamily: "'Playfair Display', serif",
+    fontSize: "1.25rem", fontWeight: 700,
+    color: "var(--text-primary)", lineHeight: 1.2,
+    margin: 0, padding: 0,
+  }}>Query History</h1>
+            <p style={{ fontSize: "0.8125rem", color: "var(--text-muted)", marginTop: 4 }}>
               {items.length} saved {items.length === 1 ? "query" : "queries"}
             </p>
           </div>
@@ -100,7 +101,7 @@ export default function HistoryPage() {
 
         {/* Stats badges */}
         <div className="flex items-center gap-2">
-          {chartTypes.slice(0, 3).map(ct => {
+          {chartTypes.slice(0, 2).map(ct => {
             const meta = CHART_META[ct] || CHART_META.table;
             const count = items.filter(i => i.chart_type === ct).length;
             return (

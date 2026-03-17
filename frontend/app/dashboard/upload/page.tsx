@@ -96,27 +96,27 @@ export default function UploadPage() {
     <div className="h-screen flex flex-col" style={{ background: "var(--bg-base)" }}>
 
       {/* Header */}
-      <div className="h-16 flex items-center justify-between px-6 flex-shrink-0 glass"
-        style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg, var(--emerald), var(--cyan))" }}>
-            <HardDrive className="w-4.5 h-4.5 text-white" />
+      <div className="flex items-center justify-between px-6 flex-shrink-0 glass"
+  style={{ height: 72, borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center gap-3" style={{ flexShrink: 0, minWidth: 0 }}>
+  <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+    style={{ background: "linear-gradient(135deg, var(--emerald), var(--cyan))", flexShrink: 0 }}>
+            <HardDrive style={{ width: 18, height: 18, color: "white" }} />
           </div>
-          <div>
-            <h1 style={{ fontFamily: "Manrope, sans-serif", fontSize: "1.125rem", fontWeight: 700, color: "var(--text-primary)" }}>
-              Datasets
-            </h1>
-            <p style={{ fontSize: "0.8125rem", color: "var(--text-muted)" }}>Upload CSV files up to 1 GB</p>
-          </div>
+          <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+  <h1 style={{ fontFamily: "Manrope, sans-serif", fontSize: "1.125rem", fontWeight: 700, color: "var(--text-primary)", margin: 0, padding: 0 }}>
+    Datasets
+  </h1>
+  <p style={{ fontSize: "0.8125rem", color: "var(--text-muted)", margin: 0, padding: 0 }}>Upload CSV files up to 1 GB</p>
+</div>
         </div>
         <button onClick={loadFiles} className="btn-ghost btn-sm" title="Refresh">
           <RefreshCw className="w-4 h-4" />
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-3xl mx-auto space-y-6">
+      <div className="flex-1 overflow-y-auto" style={{ padding: "28px 24px" }}>
+  <div className="max-w-3xl mx-auto" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
 
           {/* Default dataset */}
           <div className="card-pro flex items-start gap-4" style={{ borderLeft: "4px solid var(--brand)" }}>

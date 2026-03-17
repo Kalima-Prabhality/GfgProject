@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
-  MessageSquare, History, Upload, LogOut,
+  MessageSquare, History, Upload, LogOut,Target ,
   ChevronLeft, ChevronRight, User, Sparkles, Sun, Moon,
   BarChart3,
 } from "lucide-react";
@@ -14,6 +14,8 @@ const NAV = [
   { href: "/dashboard",         icon: MessageSquare, label: "AI Chat",  desc: "Ask your data" },
   { href: "/dashboard/history", icon: History,       label: "History",  desc: "Past queries"  },
   { href: "/dashboard/upload",  icon: Upload,        label: "Datasets", desc: "Upload CSV"    },
+    { href: "/dashboard/strategy", icon: Target,        label: "Strategy",  desc: "Kanban board"   },
+
 ];
 
 function Sidebar() {

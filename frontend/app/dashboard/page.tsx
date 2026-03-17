@@ -62,7 +62,6 @@ interface Message {
 type GeminiPart = { text: string };
 type GeminiMessage = { role: "user" | "model"; parts: GeminiPart[] };
 
-const GEMINI_KEY = "AIzaSyDkMiTG9u-UKiw0t7jJEewDuZCi4qvx5v4";
 
 const SYSTEM_PROMPT = `You are Nykaa BI Assistant — a smart, friendly AI analyst built into the Nykaa Business Intelligence dashboard.
 
@@ -103,28 +102,15 @@ function needsData(text: string): boolean {
 }
 
 async function geminiChat(history: GeminiMessage[], userMsg: string): Promise<string> {
-  const contents: GeminiMessage[] = [
+  const messages = [
     ...history,
     { role: "user", parts: [{ text: userMsg }] },
   ];
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents,
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        generationConfig: { temperature: 0.8, topK: 40, topP: 0.95, maxOutputTokens: 2048 },
-      }),
-    }
-  );
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `Gemini error ${res.status}`);
-  }
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "I couldn't generate a response.";
+  const res = await api.post("/api/gemini/chat", {
+    messages,
+    system_prompt: SYSTEM_PROMPT,
+  });
+  return res.data.text ?? "I couldn't generate a response.";
 }
 
 function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
